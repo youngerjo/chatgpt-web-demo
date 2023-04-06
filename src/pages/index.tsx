@@ -66,13 +66,13 @@ export default function Page() {
   }
 
   useEffect(() => {
+    if (messageEnd.current) {
+      messageEnd.current.scrollIntoView()
+    }
+
     if (!loading) {
       if (textField.current) {
         textField.current.focus()
-      }
-
-      if (messageEnd.current) {
-        messageEnd.current.scrollIntoView()
       }
     }
   }, [loading])
