@@ -48,7 +48,7 @@ export default async function handler(
     const { message, request, response } = error
 
     if (response) {
-      res.status(response.status).send({ error: response.body })
+      res.status(response.status).json({ error: response.body })
     } else if (request) {
       res.status(502).end()
     } else {
