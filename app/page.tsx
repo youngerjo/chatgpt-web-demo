@@ -1,66 +1,31 @@
-import axios from "axios"
+"use client"
+
 import { FormEvent, useEffect, useRef, useState } from "react"
-
-interface Message {
-  role: string
-  content: string
-}
-
-interface Choice {
-  index: number
-  message: Message
-  finish_reason: string
-}
-
-interface Usage {
-  prompt_tokens: number
-  completion_tokens: number
-  total_tokens: number
-}
-
-interface ChatCompletionData {
-  id: string
-  object: string
-  created: number
-  choices: Choice[]
-  usage: Usage
-}
+import { useChat } from "ai/react"
 
 export default function Page() {
   const textField = useRef<HTMLInputElement>()
   const messageEnd = useRef<HTMLLIElement>()
-  const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState("")
   const [loading, setLoading] = useState(false)
+
+  const chat = useChat({
+    api: `/api/chat`,
+    body: {
+      model: "gpt-3.5-turbo",
+    },
+  })
 
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault()
 
-    let newMessage = {
-      role: "user",
-      content: inputText,
-    }
-
-    setMessages((prevMessages) => [...prevMessages, newMessage])
     setLoading(true)
 
-    const res = await axios.post("/api/openai/chat/completions", {
-      model: "gpt-3.5-turbo",
-      messages: [...messages, newMessage],
+    await chat.append({
+      role: "user",
+      content: inputText,
     })
 
-    const data: ChatCompletionData = res.data
-    console.log(data)
-
-    setMessages((prevMessages) => {
-      let newMessages = [...prevMessages]
-
-      data.choices.forEach((choice) => {
-        newMessages.push(choice.message)
-      })
-
-      return newMessages
-    })
     setInputText("")
     setLoading(false)
   }
@@ -80,7 +45,7 @@ export default function Page() {
   return (
     <div className="container mx-auto h-screen flex flex-col justify-between items-stretch">
       <ul className="overflow-auto py-4">
-        {messages
+        {chat.messages
           .filter((message) => message.role != "system")
           .map((message, index) => (
             <li
@@ -111,7 +76,7 @@ export default function Page() {
             ref={textField}
             type="text"
             className={`input input-bordered w-full ${
-              loading ? "text-gray-600" : "text-primary"
+              loading ? "input-disabled" : ""
             }`}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
@@ -119,10 +84,17 @@ export default function Page() {
           ></input>
           <button
             type="submit"
-            className={`btn btn-primary w-32 ${loading ? "loading" : ""}`}
+            className="btn btn-primary w-32"
             disabled={loading}
           >
-            {loading ? "Waiting" : "Send"}
+            {loading ? (
+              <div className="flex flex-row items-center gap-2">
+                <span className="loading loading-spinner" />
+                <span>Waiting</span>
+              </div>
+            ) : (
+              <span>Send</span>
+            )}
           </button>
         </div>
       </form>
