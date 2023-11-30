@@ -1,51 +1,36 @@
 "use client"
 
-import { FormEvent, useEffect, useRef, useState } from "react"
+import { useRef, useEffect } from "react"
 import { useChat } from "ai/react"
 
 export default function Page() {
   const textField = useRef<HTMLInputElement>()
   const messageEnd = useRef<HTMLLIElement>()
-  const [inputText, setInputText] = useState("")
-  const [loading, setLoading] = useState(false)
 
-  const chat = useChat({
-    api: `/api/chat`,
-    body: {
-      model: "gpt-3.5-turbo",
-    },
-  })
-
-  const sendMessage = async (e: FormEvent) => {
-    e.preventDefault()
-
-    setLoading(true)
-
-    await chat.append({
-      role: "user",
-      content: inputText,
+  const { isLoading, messages, input, handleInputChange, handleSubmit } =
+    useChat({
+      api: `/api/chat`,
+      body: {
+        model: "gpt-3.5-turbo",
+      },
     })
-
-    setInputText("")
-    setLoading(false)
-  }
 
   useEffect(() => {
     if (messageEnd.current) {
       messageEnd.current.scrollIntoView()
     }
+  }, [messages])
 
-    if (!loading) {
-      if (textField.current) {
-        textField.current.focus()
-      }
+  useEffect(() => {
+    if (textField.current && !isLoading) {
+      textField.current.focus()
     }
-  }, [loading])
+  }, [isLoading])
 
   return (
     <div className="container mx-auto h-screen flex flex-col justify-between items-stretch">
       <ul className="overflow-auto py-4">
-        {chat.messages
+        {messages
           .filter((message) => message.role != "system")
           .map((message, index) => (
             <li
@@ -70,24 +55,24 @@ export default function Page() {
           ))}
         <li ref={messageEnd} />
       </ul>
-      <form onSubmit={sendMessage}>
-        <div className="flex flex-row justify-between gap-2 my-4">
+      <form onSubmit={handleSubmit}>
+        <div className="flex flex-row justify-between gap-2 p-2 border-t">
           <input
             ref={textField}
             type="text"
             className={`input input-bordered w-full ${
-              loading ? "input-disabled" : ""
+              isLoading ? "input-disabled" : ""
             }`}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            disabled={loading}
-          ></input>
+            value={input}
+            onChange={handleInputChange}
+            disabled={isLoading}
+          />
           <button
             type="submit"
-            className="btn btn-primary w-32"
-            disabled={loading}
+            className="btn btn-primary uppercase w-32"
+            disabled={isLoading}
           >
-            {loading ? (
+            {isLoading ? (
               <div className="flex flex-row items-center gap-2">
                 <span className="loading loading-spinner" />
                 <span>Waiting</span>
